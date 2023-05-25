@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <img src="test3.jpg" />
+    <button onclick="brickMe()">Brick Me</button>
+    <script>
+      var colorPallete = [
+        [244, 244, 244],
+        [208, 206, 201],
+        [178, 180, 178],
+        [140, 138, 136],
+        [100, 100, 100],
+        [22, 22, 22],
+        [0, 187, 220],
+        [175, 205, 215],
+        [139, 190, 232],
+        [126, 147, 167],
+        [62, 135, 203],
+        [0, 94, 184],
+        [51, 63, 72],
+        [0, 53, 80],
+        [190, 202, 234],
+        [221, 121, 117],
+        [197, 70, 68],
+        [218, 41, 28],
+        [177, 162, 202],
+        [142, 127, 174],
+        [236, 208, 181],
+        [240, 196, 160],
+        [250, 170, 141],
+        [248, 173, 109],
+        [229, 158, 109],
+        [189, 154, 122],
+        [181, 129, 80],
+        [255, 105, 0],
+        [166, 85, 35],
+        [107, 53, 41],
+        [105, 63, 35],
+        [78, 53, 36],
+        [120, 78, 144],
+        [248, 229, 154],
+        [213, 200, 151],
+        [239, 182, 97],
+        [255, 209, 0],
+        [255, 163, 0],
+        [229, 155, 220],
+        [177, 78, 181],
+        [174, 164, 111],
+        [174, 184, 98],
+        [181, 189, 0],
+        [239, 215, 229],
+        [94, 126, 41],
+        [231, 147, 183],
+        [207, 87, 138],
+        [51, 85, 37],
+        [45, 200, 77],
+        [0, 154, 68],
+      ];
+      const regionSize = 5;
+      var canvasPallete = createCanvasPallete();
+      var colorMap = new Map();
+
+      function brickMe() {
+        // load the source image
+        var img = new Image();
+        img.src = "test3.jpg";
+        img.onload = function () {
+          // create a canvas element and set its size to the image size
+          var canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+
+          // get the canvas context and draw the image onto it
+          var ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+          console.log(img.width, img.height);
+
+          var pixels = ctx.getImageData(0, 0, regionSize, regionSize).data;
+          console.log(pixels);
+          // loop through each region
+          for (var y = 0; y < img.height; y += regionSize) {
+            for (var x = 0; x < img.width; x += regionSize) {
+              console.log(x, y);
+              // get the average color of the pixels within the region
+              var pixels = ctx.getImageData(x, y, regionSize, regionSize).data;
+              // replace the region with the new canvas element
+              ctx.drawImage(canvasPallete[getAvgColorIndex(pixels)], x, y);
+            }
+          }
+          console.log(colorMap);
+          // display the mosaic image
+          var mosaicImg = document.createElement("img");
+          mosaicImg.src = canvas.toDataURL();
+          document.body.appendChild(mosaicImg);
+          //console.log(Date.now() - startTime);
+        };
+      }
+
+      function matchingColor(color) {
+        var match = colorPallete[0];
+        var index = 0;
+        var minRmse = Number.MAX_SAFE_INTEGER;
+        colorPallete.forEach((col, i) => {
+          var temp = rmse(col, color);
+          if (temp < minRmse) {
+            minRmse = temp;
+            match = col;
+            index = i;
+          }
+        });
+        return index;
+      }
+
+      function rmse(color1, color2) {
+        return Math.round(
+          Math.sqrt(
+            (Math.pow(color1[0] - color2[0], 2) +
+              Math.pow(color1[1] - color2[1], 2) +
+              Math.pow(color1[2] - color2[2], 2)) /
+              3
+          )
+        );
+      }
+
+      function createCanvasPallete() {
+        var tempCanvasPallete = [];
+        colorPallete.forEach((color) => {
+          // create a new canvas element with the average color as its background
+          var newCanvas = document.createElement("canvas");
+          newCanvas.width = regionSize;
+          newCanvas.height = regionSize;
+          var newCtx = newCanvas.getContext("2d");
+          newCtx.fillStyle =
+            "rgb(" +
+            Math.round(color[0]) +
+            ", " +
+            Math.round(color[1]) +
+            ", " +
+            Math.round(color[2]) +
+            ")";
+          //newCtx.strokeStyle = "black";
+          // newCtx.strokeText(
+          //   Math.round((color[0] + color[1] + color[2]) / 3),
+          //   regionSize / 2,
+          //   regionSize / 2,
+          //   regionSize
+          // );
+          //newCtx.strokeRect(0, 0, regionSize, regionSize);
+          newCtx.fillRect(0, 0, regionSize, regionSize);
+          //newCtx.fillStyle = "#FFFFFF";
+          //newCtx.font = "bold " + regionSize / 4 + "px serif";
+          // newCtx.fillText(
+          //   Math.round((color[0] + color[1] + color[2]) / 3),
+          //   regionSize / 2,
+          //   regionSize / 2
+          // );
+
+          tempCanvasPallete.push(newCanvas);
+        });
+
+        return tempCanvasPallete;
+      }
+
+      function getAvgColorIndex(pixels) {
+        var avgColor = [0, 0, 0];
+        for (var i = 0; i < pixels.length; i += 4) {
+          avgColor[0] += pixels[i];
+          avgColor[1] += pixels[i + 1];
+          avgColor[2] += pixels[i + 2];
+        }
+        avgColor[0] /= pixels.length / 4;
+        avgColor[1] /= pixels.length / 4;
+        avgColor[2] /= pixels.length / 4;
+
+        var matchingIndex = matchingColor(avgColor);
+        if (colorMap.has(matchingIndex)) {
+          colorMap.set(matchingIndex, colorMap.get(matchingIndex) + 1);
+        } else {
+          colorMap.set(matchingIndex, 1);
+        }
+        //avrColor = colorPallete[matchingIndex];
+        return matchingIndex;
+      }
+    </script>
+  </body>
+</html>
